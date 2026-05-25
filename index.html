@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Poison Ivy ID Quiz</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #1a2e1a;
+      color: #f0ede8;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 48px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    header h1 {
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      font-weight: 700;
+      color: #c8e6c9;
+      letter-spacing: -0.5px;
+    }
+
+    header p {
+      color: #a5d6a7;
+      font-size: 0.95rem;
+      margin-top: 6px;
+    }
+
+    /* Progress bar */
+    .progress-wrap {
+      width: 100%;
+      max-width: 720px;
+      margin-bottom: 28px;
+    }
+
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: #81c784;
+      margin-bottom: 6px;
+    }
+
+    .progress-bar-bg {
+      background: #2e4a2e;
+      border-radius: 99px;
+      height: 8px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      background: linear-gradient(90deg, #66bb6a, #a5d6a7);
+      height: 100%;
+      border-radius: 99px;
+      transition: width 0.4s ease;
+    }
+
+    /* Slide card */
+    .slide {
+      width: 100%;
+      max-width: 720px;
+      background: #22362a;
+      border-radius: 20px;
+      padding: 28px 24px 24px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+
+    .question-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #81c784;
+      margin-bottom: 8px;
+    }
+
+    .question-text {
+      font-size: clamp(1rem, 2.5vw, 1.2rem);
+      font-weight: 600;
+      color: #e8f5e9;
+      margin-bottom: 24px;
+      line-height: 1.4;
+    }
+
+    .choices {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 500px) {
+      .choices { grid-template-columns: 1fr; }
+    }
+
+    .choice {
+      background: #1a2e1a;
+      border: 2.5px solid #3a5a3a;
+      border-radius: 16px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+      user-select: none;
+    }
+
+    .choice:hover:not(.disabled) {
+      border-color: #66bb6a;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102,187,106,0.2);
+    }
+
+    .choice.disabled { cursor: default; }
+
+    .choice.correct {
+      border-color: #4caf50;
+      box-shadow: 0 0 0 3px rgba(76,175,80,0.3);
+      animation: pulse-green 0.4s ease;
+    }
+
+    .choice.incorrect {
+      border-color: #ef5350;
+      box-shadow: 0 0 0 3px rgba(239,83,80,0.3);
+      animation: pulse-red 0.4s ease;
+    }
+
+    @keyframes pulse-green {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.02); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes pulse-red {
+      0% { transform: translateX(0); }
+      25% { transform: translateX(-4px); }
+      75% { transform: translateX(4px); }
+      100% { transform: translateX(0); }
+    }
+
+    .choice-img-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4/3;
+      background: #111e11;
+      overflow: hidden;
+    }
+
+    .choice-img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: opacity 0.3s;
+    }
+
+    .choice-img-wrap img.loading { opacity: 0.3; }
+
+    .result-badge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      font-weight: 700;
+      opacity: 0;
+      transform: scale(0);
+      transition: opacity 0.25s, transform 0.25s;
+    }
+
+    .correct .result-badge { background: #4caf50; opacity: 1; transform: scale(1); }
+    .incorrect .result-badge { background: #ef5350; opacity: 1; transform: scale(1); }
+
+    .choice-body {
+      padding: 12px 14px;
+    }
+
+    .choice-short-desc {
+      font-size: 0.82rem;
+      color: #a5d6a7;
+      line-height: 1.4;
+      min-height: 2.8em;
+    }
+
+    .choice-result-desc {
+      margin-top: 8px;
+      font-size: 0.78rem;
+      line-height: 1.45;
+      border-radius: 8px;
+      padding: 8px 10px;
+      display: none;
+    }
+
+    .correct .choice-result-desc {
+      display: block;
+      background: rgba(76,175,80,0.15);
+      color: #a5d6a7;
+      border-left: 3px solid #4caf50;
+    }
+
+    .incorrect .choice-result-desc {
+      display: block;
+      background: rgba(239,83,80,0.15);
+      color: #ef9a9a;
+      border-left: 3px solid #ef5350;
+    }
+
+    /* Feedback banner */
+    .feedback-banner {
+      margin-top: 20px;
+      border-radius: 12px;
+      padding: 14px 18px;
+      font-size: 0.88rem;
+      line-height: 1.5;
+      display: none;
+    }
+
+    .feedback-banner.show { display: block; }
+    .feedback-banner.correct-fb { background: rgba(76,175,80,0.12); border: 1px solid #4caf50; color: #c8e6c9; }
+    .feedback-banner.incorrect-fb { background: rgba(239,83,80,0.12); border: 1px solid #ef5350; color: #ffcdd2; }
+
+    /* Navigation */
+    .nav-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 22px;
+      gap: 12px;
+    }
+
+    .btn {
+      padding: 11px 26px;
+      border-radius: 10px;
+      border: none;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .btn:active { transform: scale(0.97); }
+
+    .btn-next {
+      background: #388e3c;
+      color: #fff;
+    }
+
+    .btn-next:hover { background: #43a047; }
+    .btn-next:disabled { background: #2e4a2e; color: #5a7a5a; cursor: default; }
+
+    /* Score screen */
+    .score-screen {
+      width: 100%;
+      max-width: 720px;
+      background: #22362a;
+      border-radius: 20px;
+      padding: 40px 28px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      text-align: center;
+      display: none;
+    }
+
+    .score-screen.show { display: block; }
+
+    .score-emoji { font-size: 3.5rem; margin-bottom: 12px; }
+
+    .score-title {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #c8e6c9;
+      margin-bottom: 8px;
+    }
+
+    .score-number {
+      font-size: 3rem;
+      font-weight: 800;
+      color: #66bb6a;
+      margin: 12px 0;
+    }
+
+    .score-sub {
+      color: #81c784;
+      font-size: 0.95rem;
+      margin-bottom: 28px;
+    }
+
+    .score-tip-box {
+      background: #1a2e1a;
+      border-radius: 14px;
+      padding: 18px 20px;
+      text-align: left;
+      margin-bottom: 24px;
+    }
+
+    .score-tip-box h3 {
+      color: #a5d6a7;
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 10px;
+    }
+
+    .score-tip-box ul {
+      padding-left: 18px;
+      color: #c8e6c9;
+      font-size: 0.85rem;
+      line-height: 1.8;
+    }
+
+    .btn-restart {
+      background: #388e3c;
+      color: #fff;
+      padding: 13px 32px;
+      font-size: 1rem;
+    }
+
+    .btn-restart:hover { background: #43a047; }
+
+    /* Attribution */
+    .attribution {
+      margin-top: 24px;
+      font-size: 0.72rem;
+      color: #4a6a4a;
+      text-align: center;
+      max-width: 720px;
+    }
+
+    .attribution a { color: #5a8a5a; text-decoration: underline; }
+
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🌿 Poison Ivy ID Quiz</h1>
+  <p>Can you tell poison ivy apart from its look-alikes?</p>
+</header>
+
+<div class="progress-wrap">
+  <div class="progress-label">
+    <span id="progress-text">Question 1 of 7</span>
+    <span id="score-label">Score: 0</span>
+  </div>
+  <div class="progress-bar-bg">
+    <div class="progress-bar-fill" id="progress-fill" style="width: 0%"></div>
+  </div>
+</div>
+
+<div class="slide" id="slide"></div>
+
+<div class="score-screen" id="score-screen">
+  <div class="score-emoji" id="score-emoji"></div>
+  <div class="score-title">Quiz Complete!</div>
+  <div class="score-number" id="final-score"></div>
+  <div class="score-sub" id="score-sub"></div>
+  <div class="score-tip-box">
+    <h3>Key Rules to Remember</h3>
+    <ul>
+      <li><strong>"Leaves of three, let it be"</strong> — poison ivy always has exactly 3 leaflets</li>
+      <li>The middle leaflet has a longer stem (petiolule) than the two side ones</li>
+      <li>Leaflet edges can be smooth, toothed, or lobed — don't rely on shape alone</li>
+      <li>Hairy vines ("hairy rope, don't be a dope") are a giveaway on trees</li>
+      <li>White/cream waxy berries in clusters = danger; never handle or burn</li>
+      <li>All parts of the plant contain urushiol year-round, even bare winter stems</li>
+    </ul>
+  </div>
+  <button class="btn btn-restart" onclick="restartQuiz()">Try Again</button>
+</div>
+
+<div class="attribution">
+  Images sourced from <a href="https://www.inaturalist.org" target="_blank">iNaturalist</a> (CC-BY / CC-BY-NC) and
+  <a href="https://commons.wikimedia.org" target="_blank">Wikimedia Commons</a> (CC licenses).
+  All images used for educational purposes.
+</div>
+
+<script>
+const questions = [
+  {
+    question: "Which plant is poison ivy?",
+    choices: [
+      {
+        label: "A",
+        isPoison: true,
+        image: "https://inaturalist-open-data.s3.amazonaws.com/photos/666754075/medium.jpg",
+        shortDesc: "A three-leaflet plant photographed in the field. The center leaflet sits on a noticeably longer stalk than the two side leaflets.",
+        resultDesc: "Correct! This is poison ivy (Toxicodendron radicans). The classic trio of leaflets, the longer stalk on the middle leaflet (petiolule), and the slightly glossy upper surface are all key identifiers.",
+        credit: "iNaturalist / CC-BY-NC"
+      },
+      {
+        label: "B",
+        isPoison: false,
+        image: "https://inaturalist-open-data.s3.amazonaws.com/photos/666730603/medium.jpg",
+        shortDesc: "A climbing vine with palmate compound leaves. Each leaf is divided into multiple leaflets radiating from a central point.",
+        resultDesc: "This is Virginia creeper (Parthenocissus quinquefolia). The most reliable distinction: it has FIVE leaflets per leaf, not three. The five-finger fan pattern rules out poison ivy immediately.",
+        credit: "iNaturalist / CC-BY-NC"
+      }
+    ],
+    feedbackCorrect: "The telltale sign: exactly 3 leaflets. Virginia creeper always has 5 leaflets arranged like a hand — count before you touch.",
+    feedbackIncorrect: "This was Virginia creeper — it has 5 leaflets, not 3. Poison ivy always has exactly 3 leaflets per leaf, no exceptions."
+  },
+  {
+    question: "One of these is poison ivy. Which one?",
+    choices: [
+      {
+        label: "A",
+        isPoison: false,
+        image: "https://static.inaturalist.org/photos/41574115/medium.jpg",
+        shortDesc: "A leafy cane with compound leaves. Look closely at the stem — it has small prickles or thorns along its length.",
+        resultDesc: "This is Allegheny blackberry (Rubus allegheniensis). Though it can have 3-leaflet leaves, the thorny or prickly stems are a dead giveaway — poison ivy is always completely smooth-stemmed and never has any thorns.",
+        credit: "iNaturalist / CC-BY-NC"
+      },
+      {
+        label: "B",
+        isPoison: true,
+        image: "https://inaturalist-open-data.s3.amazonaws.com/photos/666747014/medium.jpg",
+        shortDesc: "Three leaflets on smooth, thornless stems. The leaves may show a slight sheen and the two side leaflets are often slightly asymmetric.",
+        resultDesc: "Correct! This is poison ivy. The smooth, thornless stems, trio of leaflets with the center one on a longer stalk, and slightly waxy leaf surface are classic features. Stems are never spiny or hairy in a prickly way.",
+        credit: "iNaturalist / CC-BY-NC"
+      }
+    ],
+    feedbackCorrect: "Thorn check saves lives! Raspberry and blackberry canes always have thorns or prickles. Poison ivy is always completely smooth-stemmed.",
+    feedbackIncorrect: "The left plant has thorns or prickles on the stem — poison ivy never does. Thorns immediately rule out poison ivy."
+  },
+  {
+    question: "Both plants have 3 leaflets. Which is the dangerous one?",
+    choices: [
+      {
+        label: "A",
+        isPoison: true,
+        image: "https://inaturalist-open-data.s3.amazonaws.com/photos/666550562/medium.jpg",
+        shortDesc: "Three leaflets with smooth to slightly wavy edges. The middle leaflet has a clearly longer stem connecting it to the main leaf stalk.",
+        resultDesc: "Correct! This is poison ivy. Notice how the middle leaflet's stalk (petiolule) is longer than the two side ones — a consistent feature. The leaf edges can range from smooth to slightly toothed, so don't rely on edge shape alone.",
+        credit: "iNaturalist / CC-BY-NC"
+      },
+      {
+        label: "B",
+        isPoison: false,
+        image: "https://inaturalist-open-data.s3.amazonaws.com/photos/666720188/medium.jpg",
+        shortDesc: "Three leaflets with rounded, scalloped edges. This shrub is closely related to poison ivy but produces harmless red berries.",
+        resultDesc: "This is fragrant sumac (Rhus aromatica), one of poison ivy's closest relatives but harmless. The more rounded, scalloped leaflet edges, slightly wrinkled texture, and citrusy smell when crushed distinguish it. It also produces red (not white) berries.",
+        credit: "iNaturalist / CC-BY-NC"
+      }
+    ],
+    feedbackCorrect: "Fragrant sumac is a tricky look-alike. Key tells: more rounded/scalloped leaflets, citrusy smell when crushed, and it produces red berries — not poison ivy's white ones.",
+    feedbackIncorrect: "Fragrant sumac is harmless despite the similar leaf shape. Poison ivy leaflets have a more elongated tip, a longer center-leaflet stalk, and produce white waxy berries."
+  },
+  {
+    question: "Which of these is poison ivy?",
+    choices: [
+      {
+        label: "A",
+        isPoison: true,
+        image: "https://inaturalist-open-data.s3.amazonaws.com/photos/666544848/medium.jpg",
+        shortDesc: "Three leaflets growing from a vine or low shrub. The leaflets are oval with a pointed tip and a smooth upper surface.",
+        resultDesc: "Correct! This is poison ivy. The combination of exactly 3 leaflets, smooth (not hairy or thorny) stems, the longer middle-leaflet stalk, and the slightly glossy surface confirm the ID. It grows as a vine, shrub, or ground cover.",
+        credit: "iNaturalist / CC-BY-NC"
+      },
+      {
+        label: "B",
+        isPoison: false,
+        image: "https://inaturalist-open-data.s3.amazonaws.com/photos/666624841/medium.jpg",
+        shortDesc: "A woody vine with alternate, oval leaves and a twining growth habit. Stems are smooth without aerial rootlets.",
+        resultDesc: "This is Oriental bittersweet (Celastrus orbiculatus), an invasive vine. It has simple (not compound) alternate leaves — one leaf per node, not a three-leaflet cluster. Poison ivy's leaves always consist of three distinct leaflets.",
+        credit: "iNaturalist / CC-BY-NC"
+      }
+    ],
+    feedbackCorrect: "Bittersweet has simple leaves — one blade per leaf stalk. Poison ivy always has three distinct leaflets per leaf stalk, even when young or stressed.",
+    feedbackIncorrect: "Bittersweet's leaves are simple — a single blade on each stalk, not a cluster of three. Poison ivy always presents its classic trio of leaflets."
+  },
+  {
+    question: "Which low-growing plant is poison ivy?",
+    choices: [
+      {
+        label: "A",
+        isPoison: false,
+        image: "https://inaturalist-open-data.s3.amazonaws.com/photos/650688401/medium.jpg",
+        shortDesc: "A low rosette-forming plant with three toothed leaflets. The leaves and stems have visible white hairs throughout.",
+        resultDesc: "This is wild strawberry (Fragaria virginiana). The heavily serrated leaf edges, dense white hairs on stems and leaf undersides, and low spreading rosette form are all distinct from poison ivy, which has smoother leaves and is less hairy.",
+        credit: "iNaturalist / CC-BY-NC"
+      },
+      {
+        label: "B",
+        isPoison: true,
+        image: "https://inaturalist-open-data.s3.amazonaws.com/photos/191123858/medium.jpeg",
+        shortDesc: "Three leaflets on smooth stems. New leaves often show a reddish or bronzy tint before maturing to green.",
+        resultDesc: "Correct! Poison ivy often displays a reddish-bronze color on young and new growth before it turns green. The smooth stems, three leaflets with a longer center stalk, and slightly waxy look are the tell-tale features.",
+        credit: "iNaturalist / CC-BY-NC"
+      }
+    ],
+    feedbackCorrect: "Wild strawberry is hairy and serrated throughout. Poison ivy has smoother, less hairy leaves and — as a bonus clue — often shows reddish new growth.",
+    feedbackIncorrect: "Wild strawberry has deeply toothed leaves and hairy stems. Poison ivy leaves are smoother and often show a reddish tint on young growth."
+  },
+  {
+    question: "One of these plants has toxic berries. Which one is poison ivy?",
+    choices: [
+      {
+        label: "A",
+        isPoison: true,
+        image: "https://static.inaturalist.org/photos/66170677/medium.jpeg",
+        shortDesc: "Three-leaflet clusters on a vine. This plant produces small, round, off-white to cream-colored berries in drooping clusters.",
+        resultDesc: "Correct! Poison ivy produces small (3–5mm), waxy, cream or off-white berries in loose drooping clusters. They are extremely dangerous — never handle or eat them, and never burn plants with these berries as the smoke carries urushiol.",
+        credit: "iNaturalist / CC-BY-NC"
+      },
+      {
+        label: "B",
+        isPoison: false,
+        image: "https://inaturalist-open-data.s3.amazonaws.com/photos/666644880/medium.jpg",
+        shortDesc: "A large shrub with opposite, pinnately compound leaves and flat-topped clusters of tiny flowers or dark berries.",
+        resultDesc: "This is elderberry (Sambucus canadensis). Its opposite compound leaves (5–11 leaflets per leaf), flat-topped flower/berry clusters (corymbs), and deep purple-black ripe berries are completely different from poison ivy's three-leaflet leaves and white waxy berries.",
+        credit: "iNaturalist / CC-BY-NC"
+      }
+    ],
+    feedbackCorrect: "Poison ivy berries are small, waxy, and cream/off-white in drooping clusters. Elderberry's dark purple berries in flat-topped clusters and many-leaflet leaves are unmistakably different.",
+    feedbackIncorrect: "Elderberry has dark purple berries, flat-topped clusters, and compound leaves with many leaflets. Poison ivy's berries are small, waxy, and cream/white on three-leaflet plants."
+  },
+  {
+    question: "Which plant is Virginia creeper — NOT poison ivy?",
+    choices: [
+      {
+        label: "A",
+        isPoison: false,
+        image: "https://inaturalist-open-data.s3.amazonaws.com/photos/325505988/medium.jpeg",
+        shortDesc: "A large shrub or small tree with opposite pinnately compound leaves. Produces clusters of small white flowers in summer.",
+        resultDesc: "This is elderberry (Sambucus canadensis) — harmless, and actually edible when properly prepared. Its many leaflets per leaf (5–11), opposite branching, and flat-topped flower clusters make it easy to distinguish from poison ivy.",
+        credit: "iNaturalist / CC-BY-NC"
+      },
+      {
+        label: "B",
+        isPoison: true,
+        image: "https://inaturalist-open-data.s3.amazonaws.com/photos/64125587/medium.jpg",
+        shortDesc: "Three leaflets on a climbing or trailing vine. The leaflets have slightly irregular edges and a somewhat shiny upper surface.",
+        resultDesc: "Correct! This is poison ivy. The three-leaflet arrangement, smooth vine, and shiny or waxy leaf surface are the reliable identifiers. Remember: 'leaves of three, let it be' — if you see three leaflets on a vine, treat it as dangerous until confirmed otherwise.",
+        credit: "iNaturalist / CC-BY-NC"
+      }
+    ],
+    feedbackCorrect: "Elderberry has many leaflets per leaf and opposite branching. When you see any three-leaflet vine or shrub, default to caution and treat it as poison ivy.",
+    feedbackIncorrect: "The right plant is poison ivy — three leaflets, smooth vine, slightly waxy surface. When in doubt about any three-leaflet plant, err on the side of caution."
+  }
+];
+
+let currentQ = 0;
+let score = 0;
+let answered = false;
+
+function renderQuestion() {
+  answered = false;
+  const q = questions[currentQ];
+  const total = questions.length;
+
+  document.getElementById('progress-text').textContent = `Question ${currentQ + 1} of ${total}`;
+  document.getElementById('score-label').textContent = `Score: ${score}`;
+  document.getElementById('progress-fill').style.width = `${(currentQ / total) * 100}%`;
+
+  const slide = document.getElementById('slide');
+  slide.innerHTML = `
+    <div class="question-label">Question ${currentQ + 1} of ${total}</div>
+    <div class="question-text">${q.question}</div>
+    <div class="choices">
+      ${q.choices.map((c, i) => `
+        <div class="choice" id="choice-${i}" onclick="selectChoice(${i})">
+          <div class="choice-img-wrap">
+            <img src="${c.image}" alt="${c.shortDesc}" class="loading"
+                 onload="this.classList.remove('loading')"
+                 onerror="this.src='https://placehold.co/600x450/1a2e1a/4a6a4a?text=Image+unavailable'; this.classList.remove('loading')">
+            <div class="result-badge" id="badge-${i}">${c.isPoison ? '☠️' : '✓'}</div>
+          </div>
+          <div class="choice-body">
+            <div class="choice-short-desc">${c.shortDesc}</div>
+            <div class="choice-result-desc" id="result-desc-${i}">${c.resultDesc}</div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+    <div class="feedback-banner" id="feedback"></div>
+    <div class="nav-row">
+      <button class="btn btn-next" id="next-btn" onclick="nextQuestion()" disabled>
+        ${currentQ < total - 1 ? 'Next Question →' : 'See Results'}
+      </button>
+    </div>
+  `;
+}
+
+function selectChoice(idx) {
+  if (answered) return;
+  answered = true;
+
+  const q = questions[currentQ];
+  const chosen = q.choices[idx];
+  const correct = chosen.isPoison;
+
+  if (correct) score++;
+
+  document.getElementById('score-label').textContent = `Score: ${score}`;
+
+  q.choices.forEach((c, i) => {
+    const el = document.getElementById(`choice-${i}`);
+    el.classList.add('disabled');
+    if (c.isPoison) {
+      el.classList.add('correct');
+    } else if (i === idx) {
+      el.classList.add('incorrect');
+    }
+  });
+
+  const fb = document.getElementById('feedback');
+  fb.classList.add('show', correct ? 'correct-fb' : 'incorrect-fb');
+  fb.innerHTML = `<strong>${correct ? '✅ Correct!' : '❌ Not quite.'}</strong> ${correct ? q.feedbackCorrect : q.feedbackIncorrect}`;
+
+  document.getElementById('next-btn').disabled = false;
+}
+
+function nextQuestion() {
+  currentQ++;
+  if (currentQ >= questions.length) {
+    showScore();
+  } else {
+    renderQuestion();
+  }
+}
+
+function showScore() {
+  document.getElementById('slide').style.display = 'none';
+  document.querySelector('.progress-wrap').style.display = 'none';
+
+  const screen = document.getElementById('score-screen');
+  screen.classList.add('show');
+
+  const pct = score / questions.length;
+  let emoji, sub;
+
+  if (pct === 1) {
+    emoji = '🏆'; sub = 'Perfect score! You could teach this class.';
+  } else if (pct >= 0.85) {
+    emoji = '🌟'; sub = 'Excellent! You really know your plants.';
+  } else if (pct >= 0.7) {
+    emoji = '👍'; sub = 'Good work — a few tricky ones got you.';
+  } else if (pct >= 0.5) {
+    emoji = '🌿'; sub = 'Not bad, but review the key features before your next hike.';
+  } else {
+    emoji = '⚠️'; sub = 'Brush up before heading outdoors — this one really matters!';
+  }
+
+  document.getElementById('score-emoji').textContent = emoji;
+  document.getElementById('final-score').textContent = `${score} / ${questions.length}`;
+  document.getElementById('score-sub').textContent = sub;
+}
+
+function restartQuiz() {
+  currentQ = 0;
+  score = 0;
+  document.getElementById('slide').style.display = '';
+  document.querySelector('.progress-wrap').style.display = '';
+  document.getElementById('score-screen').classList.remove('show');
+  renderQuestion();
+}
+
+// Init
+renderQuestion();
+</script>
+</body>
+</html>
